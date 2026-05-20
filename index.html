@@ -21,7 +21,7 @@
         body, html {
             height: 100vh; width: 100vw;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: transparent; 
+            background-color: #000; 
             color: #fff; overflow-x: hidden;
         }
 
@@ -30,7 +30,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: cover; 
             z-index: -10;
-            filter: brightness(1.2) contrast(1.1); 
+            filter: brightness(1.1) contrast(1.1); 
         }
 
         header {
@@ -160,6 +160,7 @@
 </head>
 <body onclick="sapaGuru()">
 
+    <!-- BACKGROUND VIDEO DIJAGA TETAP ADA -->
     <video class="video-bg" autoplay loop muted playsinline id="mainVideo">
         <source src="gedung.mp4" type="video/mp4">
     </video>
@@ -203,10 +204,13 @@
                     <i class="fa-solid fa-address-card"></i>
                     <span>KARTU UJIAN</span>
                 </div>
+
+                <!-- MENU OLAH NILAI (LINK BARU DI SINI) -->
                 <div class="card c5" onclick="window.open('https://imanschool.my.id/aplikasi-nilai/#/login', '_blank')">
                     <i class="fa-solid fa-database"></i>
                     <span>OLAH NILAI</span>
                 </div>
+
                 <div class="card c6" onclick="bukaHalaman('app-nomor-meja.html')">
                     <i class="fa-solid fa-table-list"></i>
                     <span>MEJA (V1)</span>
@@ -239,16 +243,17 @@
                     <i class="fa-solid fa-id-card-clip"></i>
                     <span>KARTU PANITIA</span>
                 </div>
+
+                <!-- MENU CEK USIA SPMB (LINK BARU DI SINI) -->
                 <div class="card c14" onclick="window.open('https://imanschool.my.id/cek-usia-spmb.imanschool.my.id/', '_blank')">
                     <i class="fa-solid fa-calendar-check"></i>
                     <span>CEK USIA SPMB</span>
                 </div>
-                <!-- MENU KE-15: FORM SPMB -->
+
                 <div class="card c16 wide" onclick="window.open('https://rohimansupriyadi82-cmd.github.io/Formulir_SPMB/', '_blank')">
                     <i class="fa-solid fa-file-lines"></i>
                     <span>FORM SPMB</span>
                 </div>
-                <!-- MENU KE-16: UNDUH FORMAT -->
                 <div class="card c15 wide" onclick="bukaDocView()">
                     <i class="fa-solid fa-folder-open"></i>
                     <span>UNDUH FORMAT</span>
@@ -257,6 +262,7 @@
         </div>
     </main>
 
+    <!-- BAGIAN UNDUH FORMAT (TETAP DIPERTAHANKAN) -->
     <div id="doc-view">
         <h2 style="text-align: center; margin-bottom: 30px; color: var(--primary);">UNDUH FORMAT DOKUMEN</h2>
         <div class="doc-list">
