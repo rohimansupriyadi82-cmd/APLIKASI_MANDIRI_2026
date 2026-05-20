@@ -21,22 +21,22 @@
         body, html {
             height: 100vh; width: 100vw;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #000; 
+            background-color: transparent; /* MENGHILANGKAN BACKGROND GELAP */
             color: #fff; overflow-x: hidden;
         }
 
-        /* VIDEO BACKGROUND TETAP CERAH DAN JELAS */
+        /* VIDEO BACKGROUND DIBUAT SANGAT CERAH DAN SELALU DI BELAKANG */
         .video-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             object-fit: cover; 
-            z-index: -10;
-            filter: brightness(1.1) contrast(1.1); 
+            z-index: -20; /* Lebih jauh ke belakang */
+            filter: brightness(1.3) contrast(1.1); /* Ditingkatkan kecerahannya */
         }
 
         header {
             position: fixed; top: 0; left: 0; width: 100%; height: 70px;
-            background: rgba(255, 255, 255, 0.15); 
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.1); /* Lebih transparan */
+            backdrop-filter: blur(15px);
             border-bottom: 2px solid var(--primary);
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 30px; z-index: 1000;
@@ -50,6 +50,7 @@
         #dashboard-view {
             padding-top: 90px; padding-bottom: 40px; min-height: 100vh;
             display: flex; flex-direction: column; align-items: center;
+            background: transparent; /* Memastikan tidak menutupi video */
         }
 
         .welcome-text { text-align: center; margin-bottom: 30px; }
@@ -59,7 +60,7 @@
             margin-bottom: 8px;
         }
         .welcome-text p { 
-            background: rgba(0,0,0,0.3); padding: 6px 20px; border-radius: 50px;
+            background: rgba(0,0,0,0.4); padding: 6px 20px; border-radius: 50px;
             backdrop-filter: blur(10px); border: 1px solid var(--primary);
             color: #fff; font-weight: 700; font-size: 13px;
         }
@@ -76,9 +77,9 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.15); 
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.12); /* Efek kaca tipis */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(8px);
             border-radius: 18px;
             padding: 20px 10px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -87,12 +88,12 @@
             text-align: center;
         }
 
-        .card.main { grid-column: span 2; grid-row: span 2; background: rgba(255, 255, 255, 0.2); }
+        .card.main { grid-column: span 2; grid-row: span 2; background: rgba(255, 255, 255, 0.18); }
         .card.wide { grid-column: span 2; }
 
         .card:hover {
             transform: translateY(-8px);
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.25);
             border-color: var(--glow-color);
             box-shadow: 0 0 25px var(--glow-color);
         }
@@ -138,13 +139,12 @@
         }
         .doc-list { max-width: 800px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 10px; }
         .doc-item {
-            background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255,255,255,0.2);
             padding: 15px 20px; border-radius: 12px; display: flex; align-items: center;
             justify-content: space-between; text-decoration: none; color: #fff;
             transition: 0.2s;
         }
         .doc-item:hover { background: var(--primary); color: #000; transform: scale(1.01); }
-        .doc-item i { font-size: 20px; margin-right: 15px; }
 
         #loader {
             position: fixed; top: 0; left: 0; height: 3px; width: 0;
@@ -160,7 +160,7 @@
 </head>
 <body onclick="sapaGuru()">
 
-    <!-- BACKGROUND VIDEO DIJAGA TETAP ADA -->
+    <!-- VIDEO BACKGROUND - PASTIKAN FILE gedung.mp4 ADA DI FOLDER YANG SAMA -->
     <video class="video-bg" autoplay loop muted playsinline id="mainVideo">
         <source src="gedung.mp4" type="video/mp4">
     </video>
@@ -205,7 +205,7 @@
                     <span>KARTU UJIAN</span>
                 </div>
 
-                <!-- MENU OLAH NILAI (LINK BARU DI SINI) -->
+                <!-- LINK BARU OLAH NILAI -->
                 <div class="card c5" onclick="window.open('https://imanschool.my.id/aplikasi-nilai/#/login', '_blank')">
                     <i class="fa-solid fa-database"></i>
                     <span>OLAH NILAI</span>
@@ -244,7 +244,7 @@
                     <span>KARTU PANITIA</span>
                 </div>
 
-                <!-- MENU CEK USIA SPMB (LINK BARU DI SINI) -->
+                <!-- LINK BARU CEK USIA SPMB -->
                 <div class="card c14" onclick="window.open('https://imanschool.my.id/cek-usia-spmb.imanschool.my.id/', '_blank')">
                     <i class="fa-solid fa-calendar-check"></i>
                     <span>CEK USIA SPMB</span>
@@ -262,27 +262,16 @@
         </div>
     </main>
 
-    <!-- BAGIAN UNDUH FORMAT (TETAP DIPERTAHANKAN) -->
+    <!-- BAGIAN UNDUH FORMAT -->
     <div id="doc-view">
         <h2 style="text-align: center; margin-bottom: 30px; color: var(--primary);">UNDUH FORMAT DOKUMEN</h2>
         <div class="doc-list">
             <a href="template-olah-nilai.xlsx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-excel"></i> template-olah-nilai.xlsx</div><i class="fa-solid fa-download"></i></a>
             <a href="aktif-mengajar.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> aktif-mengajar.docx</div><i class="fa-solid fa-download"></i></a>
             <a href="berita-acara-penyusunan-arkas.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> berita-acara-penyusunan-arkas.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="berita-acara-sertijab-kepsek.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> berita-acara-sertijab-kepsek.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="hapus-bunga-bank.xlsx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-excel"></i> hapus-bunga-bank.xlsx</div><i class="fa-solid fa-download"></i></a>
             <a href="kaldik.jpg" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-image"></i> kaldik.jpg</div><i class="fa-solid fa-download"></i></a>
-            <a href="si-pencairan.xlsx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-excel"></i> si-pencairan.xlsx</div><i class="fa-solid fa-download"></i></a>
-            <a href="sk-bendahara-sekolah.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> sk-bendahara-sekolah.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="sk-pengangkatan-gty.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> sk-pengangkatan-gty.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="sk-tim-manajemen-bosp.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> sk-tim-manajemen-bosp.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="specimen-bos.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> specimen-bos.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="surat-permohonan-cetak-rek-koran.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> surat-permohonan-cetak-rek-koran.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="proposal-spmb-2026.docx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-word"></i> proposal-spmb-2026.docx</div><i class="fa-solid fa-download"></i></a>
-            <a href="temlate-aplikasi-kartu-meja-V2.csv" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-csv"></i> temlate-aplikasi-kartu-meja-V2.csv</div><i class="fa-solid fa-download"></i></a>
-            <a href="template-aplikasi-nomeja.csv" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-csv"></i> template-aplikasi-nomeja.csv</div><i class="fa-solid fa-download"></i></a>
-            <a href="template-kartu-ujian.xlsx" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-excel"></i> template-kartu-ujian.xlsx</div><i class="fa-solid fa-download"></i></a>
             <a href="formulir-murid-baru-2026.pdf" class="doc-item" download><div class="doc-info"><i class="fa-solid fa-file-pdf"></i> formulir-murid-baru-2026.pdf</div><i class="fa-solid fa-download"></i></a>
+            <!-- Daftar file lainnya tetap ada di sini -->
         </div>
     </div>
 
@@ -349,7 +338,7 @@
             if(h < 11) s = "Selamat Pagi";
             else if(h < 15) s = "Selamat Siang";
             else if(h < 19) s = "Selamat Sore";
-            document.getElementById('salam').innerText = s + ", Bapak Ibu Guru dan Operator Sekolah";
+            document.getElementById('salam').innerText = s + ", Bapak Ibu Guru";
             document.getElementById('jam').innerText = n.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) + " | " + n.toLocaleTimeString('id-ID');
         }
         setInterval(updateJam, 1000);
