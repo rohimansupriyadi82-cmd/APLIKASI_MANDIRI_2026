@@ -195,7 +195,7 @@
         </div>
         <div>
             <label>Aksi & Database</label>
-            <input type="file" id="csvFileInput" accept=".csv" onchange="handleFileUpload()">
+            <input type="file" id="csvFileInput" accept=".csv,.xlsx,.xls" onchange="handleFileUpload()">
             <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
                 <button onclick="safePrint()">🖨️ CETAK (F4 - 1CM)</button>
                 <button class="btn-clear" onclick="clearData()">🗑️ RESET DATA</button>
@@ -215,45 +215,77 @@
     <div id="preview-container"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
     const LOGO_L = "tutwuri_putih.png"; 
     const LOGO_R = "logo_bekasi.jpg"; 
 
     window.onload = () => {
-        ['schoolName', 'examTitle', 'yearName'].forEach(id => {
+        ['schoolName', 'examTitle', 'yearName', 'filterKelas'].forEach(id => {
             const val = localStorage.getItem('cfg_' + id);
-            if(val) document.getElementById(id).value = val;
+            if (val !== null && val !== undefined) document.getElementById(id).value = val;
         });
         renderCards();
+
+        const savedScrollY = parseInt(localStorage.getItem('ui_scrollY') || '0', 10);
+        if (Number.isFinite(savedScrollY) && savedScrollY > 0) {
+            setTimeout(() => window.scrollTo(0, savedScrollY), 50);
+        }
+
+        window.addEventListener('scroll', scheduleSaveScroll, { passive: true });
     };
 
     function syncAndSave() {
         localStorage.setItem('cfg_schoolName', document.getElementById('schoolName').value);
         localStorage.setItem('cfg_examTitle', document.getElementById('examTitle').value);
         localStorage.setItem('cfg_yearName', document.getElementById('yearName').value);
+        localStorage.setItem('cfg_filterKelas', document.getElementById('filterKelas').value);
         renderCards();
     }
 
     function handleFileUpload() {
         const file = document.getElementById('csvFileInput').files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const lines = e.target.result.split('\n');
-            const data = lines.slice(1).map(line => {
-                if(!line.trim()) return null;
-                const cols = line.split(';');
-                return cols.length >= 3 ? { nama: cols[0].trim(), nisn: cols[1].trim(), kelas: cols[2].trim() } : null;
-            }).filter(x => x);
-            localStorage.setItem('db_murid', JSON.stringify(data));
-            renderCards();
-        };
-        reader.readAsText(file);
+        const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+        if (ext === 'csv') {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = parseCSVToStudents(String(e.target.result || ''));
+                localStorage.setItem('db_murid', JSON.stringify(data));
+                renderCards();
+            };
+            reader.readAsText(file);
+            return;
+        }
+
+        if (ext === 'xlsx' || ext === 'xls') {
+            if (typeof XLSX === 'undefined') {
+                alert('Library pembaca Excel belum tersedia. Pastikan internet aktif, lalu refresh halaman.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const arrayBuffer = e.target.result;
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: '' });
+                const data = parseRowsToStudents(rows);
+                localStorage.setItem('db_murid', JSON.stringify(data));
+                renderCards();
+            };
+            reader.readAsArrayBuffer(file);
+            return;
+        }
+
+        alert('Format file tidak didukung. Gunakan CSV / Excel (.xlsx / .xls).');
     }
 
     function renderCards() {
         const container = document.getElementById('preview-container');
-        const data = JSON.parse(localStorage.getItem('db_murid') || '[]');
+        const data = readStoredJSON('db_murid', []);
         const filter = document.getElementById('filterKelas').value;
         const sch = document.getElementById('schoolName').value;
         const exm = document.getElementById('examTitle').value;
@@ -263,13 +295,13 @@
         const filteredData = filter === 'all' ? data : data.filter(m => m.kelas.includes(filter));
 
         if(filteredData.length === 0) {
-            container.innerHTML = `<div style="color:#666; padding:50px; grid-column: 1/-1; text-align:center;">Data Kosong / Silahkan Upload CSV</div>`;
+            container.innerHTML = `<div style="color:#666; padding:50px; grid-column: 1/-1; text-align:center;">Data Kosong / Silahkan Upload CSV/Excel</div>`;
             return;
         }
 
         let htmlContent = '';
-        filteredData.forEach((murid, index) => {
-            const noUrut = (index + 1).toString().padStart(3, '0');
+        filteredData.forEach((murid) => {
+            const noMeja = padSeatNumber(murid.noMeja);
             htmlContent += `
                 <div class="card">
                     <img src="${LOGO_L}" class="watermark" onerror="this.style.display='none'">
@@ -282,7 +314,7 @@
                         </div>
                         <img src="${LOGO_R}" class="logo-small" onerror="this.style.opacity='0'">
                     </div>
-                    <div class="card-body"><div class="number-main">${noUrut}</div></div>
+                    <div class="card-body"><div class="number-main">${noMeja}</div></div>
                     <div class="card-footer">
                         <div class="student-name">${murid.nama}</div>
                         <div class="student-details">NISN: ${murid.nisn} | KELAS: ${murid.kelas}</div>
@@ -297,7 +329,152 @@
     }
 
     function clearData() {
-        if(confirm('Hapus semua data?')) { localStorage.clear(); location.reload(); }
+        if (confirm('Hapus semua data?')) {
+            [
+                'db_murid',
+                'cfg_schoolName',
+                'cfg_examTitle',
+                'cfg_yearName',
+                'cfg_filterKelas',
+                'ui_scrollY'
+            ].forEach((k) => localStorage.removeItem(k));
+            location.reload();
+        }
+    }
+
+    function readStoredJSON(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return fallback;
+            const parsed = JSON.parse(raw);
+            return parsed ?? fallback;
+        } catch (_) {
+            return fallback;
+        }
+    }
+
+    function padSeatNumber(value) {
+        const v = String(value ?? '').trim();
+        if (!v) return '000';
+        const digits = v.replace(/[^\d]/g, '');
+        if (!digits) return '000';
+        return digits.slice(0, 6).padStart(3, '0');
+    }
+
+    let scrollSaveTimer = null;
+    function scheduleSaveScroll() {
+        if (scrollSaveTimer) return;
+        scrollSaveTimer = setTimeout(() => {
+            scrollSaveTimer = null;
+            localStorage.setItem('ui_scrollY', String(window.scrollY || 0));
+        }, 150);
+    }
+
+    function normalizeHeaderName(header) {
+        return String(header ?? '')
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .replace(/[\.\-_/]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function findColumnIndex(headers, candidates, fallbackIndex) {
+        const normalizedHeaders = headers.map(normalizeHeaderName);
+        for (const c of candidates) {
+            const idx = normalizedHeaders.indexOf(normalizeHeaderName(c));
+            if (idx !== -1) return idx;
+        }
+        if (Number.isInteger(fallbackIndex) && fallbackIndex >= 0 && fallbackIndex < headers.length) return fallbackIndex;
+        return -1;
+    }
+
+    function parseRowsToStudents(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return [];
+        const headerRow = Array.isArray(rows[0]) ? rows[0] : [];
+        const headers = headerRow.map((h, i) => (String(h ?? '').trim() ? String(h ?? '').trim() : `kolom_${i + 1}`));
+
+        const idxNama = findColumnIndex(headers, ['nama', 'nama siswa', 'nama peserta', 'nama lengkap'], 0);
+        const idxNisn = findColumnIndex(headers, ['nisn', 'nis', 'no nisn', 'nomor nisn'], 1);
+        const idxKelas = findColumnIndex(headers, ['kelas', 'rombel', 'kelas/rombel'], 2);
+        const idxNoMeja = findColumnIndex(headers, ['no meja', 'nomor meja', 'no meja ujian', 'no. meja', 'no_meja', 'nomeja'], 3);
+
+        const dataRows = rows.slice(1);
+        const students = [];
+        for (const row of dataRows) {
+            if (!Array.isArray(row)) continue;
+            const nama = String(row[idxNama] ?? '').trim();
+            const nisn = String(row[idxNisn] ?? '').trim();
+            const kelas = String(row[idxKelas] ?? '').trim();
+            const noMeja = row[idxNoMeja];
+            if (!nama && !nisn && !kelas && (noMeja === null || noMeja === undefined || String(noMeja).trim() === '')) continue;
+            students.push({ nama, nisn, kelas, noMeja: String(noMeja ?? '').trim() });
+        }
+        return students;
+    }
+
+    function detectDelimiter(line) {
+        const candidates = [',', ';', '\t', '|'];
+        let best = { delim: ';', count: -1 };
+        for (const d of candidates) {
+            const c = (line.match(new RegExp(`\\${d}`, 'g')) || []).length;
+            if (c > best.count) best = { delim: d, count: c };
+        }
+        return best.delim;
+    }
+
+    function splitCSVLine(line, delimiter) {
+        const out = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') {
+                const next = line[i + 1];
+                if (inQuotes && next === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+                continue;
+            }
+            if (!inQuotes && ch === delimiter) {
+                out.push(cur);
+                cur = '';
+                continue;
+            }
+            cur += ch;
+        }
+        out.push(cur);
+        return out;
+    }
+
+    function parseCSVToStudents(text) {
+        const cleaned = String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        const lines = cleaned.split('\n').filter((l) => l.trim() !== '');
+        if (lines.length === 0) return [];
+
+        const delimiter = detectDelimiter(lines[0]);
+        const rawHeaders = splitCSVLine(lines[0], delimiter).map((h, i) => (String(h ?? '').trim() ? String(h ?? '').trim() : `kolom_${i + 1}`));
+
+        const idxNama = findColumnIndex(rawHeaders, ['nama', 'nama siswa', 'nama peserta', 'nama lengkap'], 0);
+        const idxNisn = findColumnIndex(rawHeaders, ['nisn', 'nis', 'no nisn', 'nomor nisn'], 1);
+        const idxKelas = findColumnIndex(rawHeaders, ['kelas', 'rombel', 'kelas/rombel'], 2);
+        const idxNoMeja = findColumnIndex(rawHeaders, ['no meja', 'nomor meja', 'no meja ujian', 'no. meja', 'no_meja', 'nomeja'], 3);
+
+        const students = [];
+        for (const line of lines.slice(1)) {
+            const cols = splitCSVLine(line, delimiter);
+            const nama = String(cols[idxNama] ?? '').trim();
+            const nisn = String(cols[idxNisn] ?? '').trim();
+            const kelas = String(cols[idxKelas] ?? '').trim();
+            const noMeja = String(cols[idxNoMeja] ?? '').trim();
+            if (!nama && !nisn && !kelas && !noMeja) continue;
+            students.push({ nama, nisn, kelas, noMeja });
+        }
+        return students;
     }
 </script>
 </body>
